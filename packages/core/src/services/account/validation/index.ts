@@ -1,5 +1,6 @@
 export { CreateAccountValidator } from "./CreateAccountValidator.js";
 export { UpdateAccountValidator } from "./UpdateAccountValidator.js";
+export { DeleteAccountValidator } from "./DeleteAccountValidator.js";
 export { ApproveAllowanceValidator } from "./ApproveAllowanceValidator.js";
 export { DeleteAllowanceValidator } from "./DeleteAllowanceValidator.js";
 export { DeleteAllNftAllowancesValidator } from "./DeleteAllNftAllowancesValidator.js";

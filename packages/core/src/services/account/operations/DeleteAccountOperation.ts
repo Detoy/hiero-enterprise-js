@@ -1,11 +1,11 @@
 import type { PrivateKey, AccountId } from "@hiero-ledger/sdk";
 import { AccountDeleteTransaction } from "@hiero-ledger/sdk";
-import type { IHieroContext } from "../../../context/index.js";
-import { TransactionExecutor } from "../../transaction/index.js";
+import { BaseOperation } from "../../transaction/index.js";
 import type {
     TransactionOptions,
     ScheduleOptions,
 } from "../../transaction/index.js";
+import { DeleteAccountValidator } from "../validation/index.js";
 
 /**
  * Options for deleting an account and sweeping its remaining balance.
@@ -38,28 +38,22 @@ export type ScheduleDeleteAccountOptions = Omit<
     "accountKey"
 >;
 
-export class DeleteAccountOperation {
-    private readonly executor: TransactionExecutor;
+export class DeleteAccountOperation extends BaseOperation<ScheduleDeleteAccountOptions> {
+    protected readonly type = "AccountDelete";
+    protected readonly serviceName = "AccountService";
+    protected readonly methodName = "deleteAccount";
+    protected readonly validator = new DeleteAccountValidator();
 
-    constructor(private readonly context: IHieroContext) {
-        this.executor = new TransactionExecutor(context);
-    }
-
-    /** Delete account execute handler. */
+    /** Submit an `AccountDeleteTransaction` signed by the account key. */
     async execute(options: DeleteAccountOptions) {
+        this.validator.validateAccountKey(options);
         // Prepend accountKey so it signs the tx before the operator auto-sign
-        const opts: DeleteAccountOptions = {
+        return await this.run({
             ...options,
             additionalSigners: [
                 options.accountKey,
                 ...(options.additionalSigners ?? []),
             ],
-        };
-        return await this.executor.run(this.build(options), opts, {
-            type: "AccountDelete",
-            serviceName: "AccountService",
-            methodName: "deleteAccount",
-            timestamp: new Date(),
         });
     }
 
@@ -73,24 +67,10 @@ export class DeleteAccountOperation {
         options: ScheduleDeleteAccountOptions,
         scheduleOptions?: ScheduleOptions,
     ) {
-        return await this.executor.scheduleRun(
-            this.build(options),
-            options,
-            {
-                type: "AccountDelete",
-                serviceName: "AccountService",
-                methodName: "deleteAccount",
-                timestamp: new Date(),
-            },
-            scheduleOptions,
-        );
+        return await this.scheduleRun(options, scheduleOptions);
     }
 
-    /**
-     * Constructs the `AccountDeleteTransaction` from the provided options.
-     * Pure — no network calls, no side effects.
-     */
-    private build(
+    protected build(
         options: ScheduleDeleteAccountOptions,
     ): AccountDeleteTransaction {
         const transferTo =

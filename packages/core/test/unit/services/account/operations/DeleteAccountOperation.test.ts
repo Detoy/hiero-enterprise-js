@@ -73,6 +73,16 @@ describe("DeleteAccountOperation (via AccountService)", () => {
             };
             expect(options.additionalSigners).toEqual([accountKey, extraKey]);
         });
+
+        it("rejects a missing accountKey before building the transaction", async () => {
+            await expect(
+                service.deleteAccount({
+                    accountId: "0.0.999",
+                    accountKey: undefined as unknown as PrivateKey,
+                }),
+            ).rejects.toMatchObject({ code: "INPUT_INVALID" });
+            expect(run).not.toHaveBeenCalled();
+        });
     });
 
     describe("scheduleDeleteAccount", () => {
