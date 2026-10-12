@@ -135,6 +135,16 @@ describe("AutoCreateEvmAccountOperation (via AccountService)", () => {
                 message: expect.stringContaining("failed: socket closed."),
             });
         });
+
+        it("rejects an invalid evmAddress before building the transaction", async () => {
+            await expect(
+                service.autoCreateEvmAccount({
+                    evmAddress: "0x123",
+                    amount: 5,
+                }),
+            ).rejects.toMatchObject({ code: "INPUT_INVALID" });
+            expect(run).not.toHaveBeenCalled();
+        });
     });
 
     describe("scheduleAutoCreateEvmAccount", () => {
