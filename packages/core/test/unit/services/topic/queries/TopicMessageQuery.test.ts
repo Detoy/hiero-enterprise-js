@@ -290,7 +290,7 @@ describe("TopicMessageQuery (via TopicService)", () => {
             );
         });
 
-        it("sets optional filters and uses the provided errorHandler", () => {
+        it("sets all optional filters on the SDK query", () => {
             const setCompletionHandler = vi.spyOn(
                 SdkTopicMessageQuery.prototype,
                 "setCompletionHandler",
