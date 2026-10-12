@@ -30,6 +30,7 @@ export class AutoCreateEvmAccountValidator {
                 "evmAddress is required.",
             );
         }
+
         if (!EVM_ADDRESS.test(value)) {
             throw validationError(
                 "AutoCreateEvmAccountValidator",

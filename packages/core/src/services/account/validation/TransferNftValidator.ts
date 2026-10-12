@@ -37,6 +37,7 @@ export class TransferNftValidator {
                 `${paramName} is required.`,
             );
         }
+
         if (typeof value === "string" && value.trim() === "") {
             throw validationError(
                 "TransferNftValidator",
@@ -52,6 +53,7 @@ export class TransferNftValidator {
                 "tokenId is required.",
             );
         }
+
         if (typeof value === "string" && value.trim() === "") {
             throw validationError(
                 "TransferNftValidator",
@@ -79,12 +81,14 @@ export class TransferNftValidator {
                 "serial is required.",
             );
         }
+
         if (!Number.isFinite(serial) || !Number.isSafeInteger(serial)) {
             throw validationError(
                 "TransferNftValidator",
                 "serial must be a safe integer.",
             );
         }
+
         if (serial <= 0) {
             throw validationError(
                 "TransferNftValidator",

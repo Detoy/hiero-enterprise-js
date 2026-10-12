@@ -55,6 +55,7 @@ export class DeleteAccountValidator {
                 `${paramName} is required.`,
             );
         }
+
         if (typeof value === "string" && value.trim() === "") {
             throw validationError(
                 "DeleteAccountValidator",

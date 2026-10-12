@@ -36,6 +36,7 @@ export class TransferHbarValidator {
                 `${paramName} is required.`,
             );
         }
+
         if (typeof value === "string" && value.trim() === "") {
             throw validationError(
                 "TransferHbarValidator",
@@ -71,6 +72,7 @@ export class TransferHbarValidator {
                     "amount must be a finite number.",
                 );
             }
+
             if (amount <= 0) {
                 throw validationError(
                     "TransferHbarValidator",
@@ -90,6 +92,7 @@ export class TransferHbarValidator {
                 "amount is not a valid Hbar value.",
             );
         }
+
         if (tinybars <= 0n) {
             throw validationError(
                 "TransferHbarValidator",

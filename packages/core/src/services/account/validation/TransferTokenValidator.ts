@@ -25,6 +25,7 @@ export class TransferTokenValidator {
             options.receiverAccountId,
         );
         this.validateTokenAmount(options.amount);
+
         if (options.expectedDecimals !== undefined) {
             this.validateExpectedDecimals(options.expectedDecimals);
         }
@@ -40,6 +41,7 @@ export class TransferTokenValidator {
                 `${paramName} is required.`,
             );
         }
+
         if (typeof value === "string" && value.trim() === "") {
             throw validationError(
                 "TransferTokenValidator",
@@ -55,6 +57,7 @@ export class TransferTokenValidator {
                 "tokenId is required.",
             );
         }
+
         if (typeof value === "string" && value.trim() === "") {
             throw validationError(
                 "TransferTokenValidator",
@@ -82,12 +85,14 @@ export class TransferTokenValidator {
                 "amount is required.",
             );
         }
+
         if (!Number.isFinite(amount) || !Number.isSafeInteger(amount)) {
             throw validationError(
                 "TransferTokenValidator",
                 "amount must be a safe integer.",
             );
         }
+
         if (amount <= 0) {
             throw validationError(
                 "TransferTokenValidator",
@@ -103,6 +108,7 @@ export class TransferTokenValidator {
                 "expectedDecimals must be a finite integer.",
             );
         }
+
         if (decimals < 0) {
             throw validationError(
                 "TransferTokenValidator",
