@@ -1,11 +1,11 @@
 import { AccountId, Hbar, TransferTransaction } from "@hiero-ledger/sdk";
-import type { IHieroContext } from "../../../context/index.js";
 import { HieroError, HieroErrorCodes } from "../../../errors/index.js";
-import { TransactionExecutor } from "../../transaction/index.js";
+import { BaseOperation } from "../../transaction/index.js";
 import type {
     TransactionOptions,
     ScheduleOptions,
 } from "../../transaction/index.js";
+import { AutoCreateEvmAccountValidator } from "../validation/index.js";
 
 /**
  * Options for auto-creating a Hollow Account by transferring HBAR to an
@@ -21,12 +21,11 @@ export interface AutoCreateEvmAccountOptions extends TransactionOptions {
     amount: number | Hbar;
 }
 
-export class AutoCreateEvmAccountOperation {
-    private readonly executor: TransactionExecutor;
-
-    constructor(private readonly context: IHieroContext) {
-        this.executor = new TransactionExecutor(context);
-    }
+export class AutoCreateEvmAccountOperation extends BaseOperation<AutoCreateEvmAccountOptions> {
+    protected readonly type = "AccountAutoCreate";
+    protected readonly serviceName = "AccountService";
+    protected readonly methodName = "autoCreateEvmAccount";
+    protected readonly validator = new AutoCreateEvmAccountValidator();
 
     /**
      * Auto-create EVM account execute handler.
@@ -41,12 +40,7 @@ export class AutoCreateEvmAccountOperation {
      *   to recover the outcome with.
      */
     async execute(options: AutoCreateEvmAccountOptions) {
-        const results = await this.executor.run(this.build(options), options, {
-            type: "AccountAutoCreate",
-            serviceName: "AccountService",
-            methodName: "autoCreateEvmAccount",
-            timestamp: new Date(),
-        });
+        const results = await this.run(options);
 
         // The new hollow account id lives on the transfer's child receipt — not
         // populated on the base receipt the executor already fetched.
@@ -96,23 +90,13 @@ export class AutoCreateEvmAccountOperation {
         options: AutoCreateEvmAccountOptions,
         scheduleOptions?: ScheduleOptions,
     ) {
-        return await this.executor.scheduleRun(
-            this.build(options),
-            options,
-            {
-                type: "AccountAutoCreate",
-                serviceName: "AccountService",
-                methodName: "autoCreateEvmAccount",
-                timestamp: new Date(),
-            },
-            scheduleOptions,
-        );
+        return await this.scheduleRun(options, scheduleOptions);
     }
 
     /**
      * Constructs the `TransferTransaction` that seeds the EVM address.
      */
-    private build(options: AutoCreateEvmAccountOptions): TransferTransaction {
+    protected build(options: AutoCreateEvmAccountOptions): TransferTransaction {
         const hbarAmount =
             options.amount instanceof Hbar
                 ? options.amount

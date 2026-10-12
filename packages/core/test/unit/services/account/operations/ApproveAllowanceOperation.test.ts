@@ -193,4 +193,73 @@ describe("ApproveAllowanceOperation (via AccountService)", () => {
             expect(approval.delegatingSpender).toBeFalsy();
         });
     });
+    it.each([
+        [
+            "approveHbarAllowance",
+            () =>
+                service.approveHbarAllowance({
+                    hbarAllowances: [
+                        {
+                            ownerAccountId: "0.0.100",
+                            spenderAccountId: "0.0.200",
+                            amount: 10,
+                        },
+                    ],
+                }),
+        ],
+        [
+            "approveTokenAllowance",
+            () =>
+                service.approveTokenAllowance({
+                    tokenAllowances: [
+                        {
+                            tokenId: "0.0.300",
+                            ownerAccountId: "0.0.100",
+                            spenderAccountId: "0.0.200",
+                            amount: 10,
+                        },
+                    ],
+                }),
+        ],
+        [
+            "approveNftAllowance",
+            () =>
+                service.approveNftAllowance({
+                    nftAllowances: [
+                        {
+                            tokenId: "0.0.300",
+                            ownerAccountId: "0.0.100",
+                            spenderAccountId: "0.0.200",
+                            allSerials: true,
+                        },
+                    ],
+                }),
+        ],
+        [
+            "deleteHbarAllowance",
+            () =>
+                service.deleteHbarAllowance([
+                    { ownerAccountId: "0.0.100", spenderAccountId: "0.0.200" },
+                ]),
+        ],
+        [
+            "deleteTokenAllowance",
+            () =>
+                service.deleteTokenAllowance([
+                    {
+                        tokenId: "0.0.300",
+                        ownerAccountId: "0.0.100",
+                        spenderAccountId: "0.0.200",
+                    },
+                ]),
+        ],
+    ])("reports %s as the event methodName", async (methodName, call) => {
+        await call();
+
+        expect(run.mock.calls[0][2]).toMatchObject({
+            type: "AccountAllowanceApprove",
+            serviceName: "AccountService",
+            methodName,
+        });
+    });
 });

@@ -10,7 +10,9 @@ import {
     ApproveAllowanceOperation,
     DeleteAllowanceOperation,
     DeleteAllNftAllowancesOperation,
-    TransferOperation,
+    TransferHbarOperation,
+    TransferTokenOperation,
+    TransferNftOperation,
 } from "./operations/index.js";
 import type {
     CreateAccountOptions,
@@ -54,10 +56,16 @@ export class AccountService {
     private readonly autoCreateOperation: AutoCreateEvmAccountOperation;
     private readonly deleteOperation: DeleteAccountOperation;
     private readonly updateOperation: UpdateAccountOperation;
-    private readonly approveAllowanceOperation: ApproveAllowanceOperation;
+    private readonly approveHbarAllowanceOperation: ApproveAllowanceOperation;
+    private readonly approveTokenAllowanceOperation: ApproveAllowanceOperation;
+    private readonly approveNftAllowanceOperation: ApproveAllowanceOperation;
+    private readonly deleteHbarAllowanceOperation: ApproveAllowanceOperation;
+    private readonly deleteTokenAllowanceOperation: ApproveAllowanceOperation;
     private readonly deleteAllowanceOperation: DeleteAllowanceOperation;
     private readonly deleteAllNftAllowancesOperation: DeleteAllNftAllowancesOperation;
-    private readonly transferOperation: TransferOperation;
+    private readonly transferHbarOperation: TransferHbarOperation;
+    private readonly transferTokenOperation: TransferTokenOperation;
+    private readonly transferNftOperation: TransferNftOperation;
     private readonly balanceQuery: AccountBalanceQuery;
     private readonly tokenBalanceQuery: TokenBalanceQuery;
     private readonly signatureQuery: AccountSignatureQuery;
@@ -67,11 +75,33 @@ export class AccountService {
         this.autoCreateOperation = new AutoCreateEvmAccountOperation(context);
         this.deleteOperation = new DeleteAccountOperation(context);
         this.updateOperation = new UpdateAccountOperation(context);
-        this.approveAllowanceOperation = new ApproveAllowanceOperation(context);
+        this.approveHbarAllowanceOperation = new ApproveAllowanceOperation(
+            context,
+            "approveHbarAllowance",
+        );
+        this.approveTokenAllowanceOperation = new ApproveAllowanceOperation(
+            context,
+            "approveTokenAllowance",
+        );
+        this.approveNftAllowanceOperation = new ApproveAllowanceOperation(
+            context,
+            "approveNftAllowance",
+        );
+        // Allowances are deleted by approving an amount of 0
+        this.deleteHbarAllowanceOperation = new ApproveAllowanceOperation(
+            context,
+            "deleteHbarAllowance",
+        );
+        this.deleteTokenAllowanceOperation = new ApproveAllowanceOperation(
+            context,
+            "deleteTokenAllowance",
+        );
         this.deleteAllowanceOperation = new DeleteAllowanceOperation(context);
         this.deleteAllNftAllowancesOperation =
             new DeleteAllNftAllowancesOperation(context);
-        this.transferOperation = new TransferOperation(context);
+        this.transferHbarOperation = new TransferHbarOperation(context);
+        this.transferTokenOperation = new TransferTokenOperation(context);
+        this.transferNftOperation = new TransferNftOperation(context);
         this.balanceQuery = new AccountBalanceQuery(context);
         this.tokenBalanceQuery = new TokenBalanceQuery(context);
         this.signatureQuery = new AccountSignatureQuery(context);
@@ -334,10 +364,7 @@ export class AccountService {
                 "hbarAllowances must be provided with at least one entry.",
             );
         }
-        return await this.approveAllowanceOperation.execute(
-            options,
-            "approveHbarAllowance",
-        );
+        return await this.approveHbarAllowanceOperation.execute(options);
     }
 
     /**
@@ -356,10 +383,7 @@ export class AccountService {
                 "tokenAllowances must be provided with at least one entry.",
             );
         }
-        return await this.approveAllowanceOperation.execute(
-            options,
-            "approveTokenAllowance",
-        );
+        return await this.approveTokenAllowanceOperation.execute(options);
     }
 
     /**
@@ -378,10 +402,7 @@ export class AccountService {
                 "nftAllowances must be provided with at least one entry.",
             );
         }
-        return await this.approveAllowanceOperation.execute(
-            options,
-            "approveNftAllowance",
-        );
+        return await this.approveNftAllowanceOperation.execute(options);
     }
 
     /**
@@ -409,11 +430,10 @@ export class AccountService {
                 "nftAllowances must be provided with at least one entry.",
             );
         }
-        return await this.deleteAllowanceOperation.execute(
+        return await this.deleteAllowanceOperation.execute({
+            ...options,
             allowances,
-            options,
-            "deleteNftAllowance",
-        );
+        });
     }
 
     /**
@@ -439,11 +459,10 @@ export class AccountService {
                 "nftAllowances must be provided with at least one entry.",
             );
         }
-        return await this.deleteAllNftAllowancesOperation.execute(
+        return await this.deleteAllNftAllowancesOperation.execute({
+            ...options,
             allowances,
-            options,
-            "deleteAllNftAllowances",
-        );
+        });
     }
 
     /**
@@ -466,17 +485,14 @@ export class AccountService {
                 "hbarAllowances must be provided with at least one entry.",
             );
         }
-        return await this.approveAllowanceOperation.execute(
-            {
-                ...options,
-                hbarAllowances: allowances.map((a) => ({
-                    ownerAccountId: a.ownerAccountId,
-                    spenderAccountId: a.spenderAccountId,
-                    amount: 0,
-                })),
-            },
-            "deleteHbarAllowance",
-        );
+        return await this.deleteHbarAllowanceOperation.execute({
+            ...options,
+            hbarAllowances: allowances.map((a) => ({
+                ownerAccountId: a.ownerAccountId,
+                spenderAccountId: a.spenderAccountId,
+                amount: 0,
+            })),
+        });
     }
 
     /**
@@ -499,18 +515,15 @@ export class AccountService {
                 "tokenAllowances must be provided with at least one entry.",
             );
         }
-        return await this.approveAllowanceOperation.execute(
-            {
-                ...options,
-                tokenAllowances: allowances.map((a) => ({
-                    tokenId: a.tokenId,
-                    ownerAccountId: a.ownerAccountId,
-                    spenderAccountId: a.spenderAccountId,
-                    amount: 0,
-                })),
-            },
-            "deleteTokenAllowance",
-        );
+        return await this.deleteTokenAllowanceOperation.execute({
+            ...options,
+            tokenAllowances: allowances.map((a) => ({
+                tokenId: a.tokenId,
+                ownerAccountId: a.ownerAccountId,
+                spenderAccountId: a.spenderAccountId,
+                amount: 0,
+            })),
+        });
     }
 
     // Crypto Transfers
@@ -536,12 +549,12 @@ export class AccountService {
         senderAccountId: string | AccountId,
         options?: TransferHbarOptions,
     ) {
-        return await this.transferOperation.transferHbar(
+        return await this.transferHbarOperation.execute({
+            ...options,
             receiverAccountId,
             amount,
             senderAccountId,
-            options,
-        );
+        });
     }
 
     /**
@@ -561,12 +574,12 @@ export class AccountService {
         senderAccountId: string | AccountId,
         options?: ScheduleTransferHbarOptions,
     ) {
-        return await this.transferOperation.scheduleTransferHbar(
+        return await this.transferHbarOperation.schedule({
+            ...options,
             receiverAccountId,
             amount,
             senderAccountId,
-            options,
-        );
+        });
     }
 
     /**
@@ -587,13 +600,13 @@ export class AccountService {
         senderAccountId: string | AccountId,
         options?: TransferTokenOptions,
     ) {
-        return await this.transferOperation.transferToken(
+        return await this.transferTokenOperation.execute({
+            ...options,
             tokenId,
             receiverAccountId,
             amount,
             senderAccountId,
-            options,
-        );
+        });
     }
 
     /**
@@ -611,13 +624,13 @@ export class AccountService {
         senderAccountId: string | AccountId,
         options?: ScheduleTransferTokenOptions,
     ) {
-        return await this.transferOperation.scheduleTransferToken(
+        return await this.transferTokenOperation.schedule({
+            ...options,
             tokenId,
             receiverAccountId,
             amount,
             senderAccountId,
-            options,
-        );
+        });
     }
 
     /**
@@ -638,13 +651,13 @@ export class AccountService {
         senderAccountId: string | AccountId,
         options?: TransferNftOptions,
     ) {
-        return await this.transferOperation.transferNft(
+        return await this.transferNftOperation.execute({
+            ...options,
             tokenId,
             serial,
             receiverAccountId,
             senderAccountId,
-            options,
-        );
+        });
     }
 
     /**
@@ -662,12 +675,12 @@ export class AccountService {
         senderAccountId: string | AccountId,
         options?: ScheduleTransferNftOptions,
     ) {
-        return await this.transferOperation.scheduleTransferNft(
+        return await this.transferNftOperation.schedule({
+            ...options,
             tokenId,
             serial,
             receiverAccountId,
             senderAccountId,
-            options,
-        );
+        });
     }
 }
