@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { PrivateKey } from "@hiero-ledger/sdk";
 import { setupIntegrationTestEnv } from "../../../utils/env.js";
 import { waitForMirrorNodeRecord } from "../../../utils/mirror-node.js";
-import { queryNftRecord } from "../../../utils/mirror-node-rest.js";
 import {
     createTestAccount,
     createOwnerSpenderPair,
@@ -12,7 +11,7 @@ import {
     TokenService,
 } from "../../../../src/services/index.js";
 
-describe("TransferOperation [Integration]", () => {
+describe("TransferTokenOperation [Integration]", () => {
     let client: AccountService;
     let tokenService: TokenService;
     let operatorAccountId: string;
@@ -33,56 +32,6 @@ describe("TransferOperation [Integration]", () => {
         operatorKey = PrivateKey.fromStringED25519(rawKey);
     });
 
-    // HBAR transfers
-    describe("transferHbar", () => {
-        it("transfers HBAR from the operator to a recipient", async () => {
-            const receiver = await createTestAccount(client, 0);
-
-            await waitForMirrorNodeRecord();
-
-            const before = await client.getAccountBalance(receiver.accountId);
-            const beforeTinybars = BigInt(before.tinybars);
-
-            await client.transferHbar(receiver.accountId, 1, operatorAccountId);
-
-            await waitForMirrorNodeRecord();
-
-            const after = await client.getAccountBalance(receiver.accountId);
-            const afterTinybars = BigInt(after.tinybars);
-
-            // Receiver pays no fees — balance increases by exactly the transfer
-            expect(afterTinybars - beforeTinybars).toBe(100_000_000n);
-        });
-
-        it("transfers HBAR from a non-operator sender (requires additionalSigners)", async () => {
-            const sender = await createTestAccount(client, 5);
-            const receiver = await createTestAccount(client, 0);
-
-            await waitForMirrorNodeRecord();
-
-            const before = await client.getAccountBalance(receiver.accountId);
-            const beforeTinybars = BigInt(before.tinybars);
-
-            await client.transferHbar(receiver.accountId, 1, sender.accountId, {
-                additionalSigners: [sender.key],
-            });
-
-            await waitForMirrorNodeRecord();
-
-            const after = await client.getAccountBalance(receiver.accountId);
-            const afterTinybars = BigInt(after.tinybars);
-
-            expect(afterTinybars - beforeTinybars).toBe(100_000_000n);
-        });
-
-        it("rejects a self-transfer before submitting to the network", async () => {
-            await expect(
-                client.transferHbar(operatorAccountId, 1, operatorAccountId),
-            ).rejects.toThrow(/must be different/);
-        });
-    });
-
-    // Fungible token transfers
     describe("transferToken", () => {
         it("transfers fungible tokens from the operator to a recipient", async () => {
             const { tokenId } = await tokenService.createFungibleToken({
@@ -194,64 +143,6 @@ describe("TransferOperation [Integration]", () => {
             );
 
             expect(balance).toBe("100");
-        });
-    });
-
-    // ----------------------------------------------------------------
-    // NFT transfers
-    // ----------------------------------------------------------------
-
-    describe("transferNft", () => {
-        it("transfers an NFT from the operator to a recipient", async () => {
-            const { tokenId } = await tokenService.createNft({
-                tokenName: "Transfer Test NFT",
-                tokenSymbol: "TNFT",
-                treasuryAccountId: operatorAccountId,
-                supplyKey: operatorKey.publicKey,
-                additionalSigners: [operatorKey],
-            });
-
-            await tokenService.mintToken({
-                tokenId,
-                metadata: [Buffer.from("meta-1")],
-                additionalSigners: [operatorKey],
-            });
-            const serial = 1;
-
-            const receiver = await createTestAccount(client, 1);
-            await tokenService.associateToken({
-                tokenId,
-                accountId: receiver.accountId,
-                additionalSigners: [receiver.key],
-            });
-
-            await client.transferNft(
-                tokenId,
-                serial,
-                receiver.accountId,
-                operatorAccountId,
-            );
-
-            await waitForMirrorNodeRecord();
-
-            const nft = await queryNftRecord(tokenId, serial);
-            expect(nft.account_id).toBe(receiver.accountId);
-        });
-    });
-
-    // Scheduled transfers
-    describe("scheduleTransferHbar", () => {
-        it("returns a scheduleId and transactionId for a scheduled HBAR transfer", async () => {
-            const receiver = await createTestAccount(client, 0);
-
-            const result = await client.scheduleTransferHbar(
-                receiver.accountId,
-                1,
-                operatorAccountId,
-                { scheduleMemo: "integration test schedule" },
-            );
-
-            expect(result.scheduleId.toString()).toMatch(/^0\.0\.\d+$/);
         });
     });
 });

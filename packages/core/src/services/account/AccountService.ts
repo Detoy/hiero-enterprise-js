@@ -10,7 +10,9 @@ import {
     ApproveAllowanceOperation,
     DeleteAllowanceOperation,
     DeleteAllNftAllowancesOperation,
-    TransferOperation,
+    TransferHbarOperation,
+    TransferTokenOperation,
+    TransferNftOperation,
 } from "./operations/index.js";
 import type {
     CreateAccountOptions,
@@ -61,7 +63,9 @@ export class AccountService {
     private readonly deleteTokenAllowanceOperation: ApproveAllowanceOperation;
     private readonly deleteAllowanceOperation: DeleteAllowanceOperation;
     private readonly deleteAllNftAllowancesOperation: DeleteAllNftAllowancesOperation;
-    private readonly transferOperation: TransferOperation;
+    private readonly transferHbarOperation: TransferHbarOperation;
+    private readonly transferTokenOperation: TransferTokenOperation;
+    private readonly transferNftOperation: TransferNftOperation;
     private readonly balanceQuery: AccountBalanceQuery;
     private readonly tokenBalanceQuery: TokenBalanceQuery;
     private readonly signatureQuery: AccountSignatureQuery;
@@ -95,7 +99,9 @@ export class AccountService {
         this.deleteAllowanceOperation = new DeleteAllowanceOperation(context);
         this.deleteAllNftAllowancesOperation =
             new DeleteAllNftAllowancesOperation(context);
-        this.transferOperation = new TransferOperation(context);
+        this.transferHbarOperation = new TransferHbarOperation(context);
+        this.transferTokenOperation = new TransferTokenOperation(context);
+        this.transferNftOperation = new TransferNftOperation(context);
         this.balanceQuery = new AccountBalanceQuery(context);
         this.tokenBalanceQuery = new TokenBalanceQuery(context);
         this.signatureQuery = new AccountSignatureQuery(context);
@@ -543,12 +549,12 @@ export class AccountService {
         senderAccountId: string | AccountId,
         options?: TransferHbarOptions,
     ) {
-        return await this.transferOperation.transferHbar(
+        return await this.transferHbarOperation.execute({
+            ...options,
             receiverAccountId,
             amount,
             senderAccountId,
-            options,
-        );
+        });
     }
 
     /**
@@ -568,12 +574,12 @@ export class AccountService {
         senderAccountId: string | AccountId,
         options?: ScheduleTransferHbarOptions,
     ) {
-        return await this.transferOperation.scheduleTransferHbar(
+        return await this.transferHbarOperation.schedule({
+            ...options,
             receiverAccountId,
             amount,
             senderAccountId,
-            options,
-        );
+        });
     }
 
     /**
@@ -594,13 +600,13 @@ export class AccountService {
         senderAccountId: string | AccountId,
         options?: TransferTokenOptions,
     ) {
-        return await this.transferOperation.transferToken(
+        return await this.transferTokenOperation.execute({
+            ...options,
             tokenId,
             receiverAccountId,
             amount,
             senderAccountId,
-            options,
-        );
+        });
     }
 
     /**
@@ -618,13 +624,13 @@ export class AccountService {
         senderAccountId: string | AccountId,
         options?: ScheduleTransferTokenOptions,
     ) {
-        return await this.transferOperation.scheduleTransferToken(
+        return await this.transferTokenOperation.schedule({
+            ...options,
             tokenId,
             receiverAccountId,
             amount,
             senderAccountId,
-            options,
-        );
+        });
     }
 
     /**
@@ -645,13 +651,13 @@ export class AccountService {
         senderAccountId: string | AccountId,
         options?: TransferNftOptions,
     ) {
-        return await this.transferOperation.transferNft(
+        return await this.transferNftOperation.execute({
+            ...options,
             tokenId,
             serial,
             receiverAccountId,
             senderAccountId,
-            options,
-        );
+        });
     }
 
     /**
@@ -669,12 +675,12 @@ export class AccountService {
         senderAccountId: string | AccountId,
         options?: ScheduleTransferNftOptions,
     ) {
-        return await this.transferOperation.scheduleTransferNft(
+        return await this.transferNftOperation.schedule({
+            ...options,
             tokenId,
             serial,
             receiverAccountId,
             senderAccountId,
-            options,
-        );
+        });
     }
 }

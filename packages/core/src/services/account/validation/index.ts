@@ -5,4 +5,6 @@ export { AutoCreateEvmAccountValidator } from "./AutoCreateEvmAccountValidator.j
 export { ApproveAllowanceValidator } from "./ApproveAllowanceValidator.js";
 export { DeleteAllowanceValidator } from "./DeleteAllowanceValidator.js";
 export { DeleteAllNftAllowancesValidator } from "./DeleteAllNftAllowancesValidator.js";
-export { TransferValidator } from "./TransferValidator.js";
+export { TransferHbarValidator } from "./TransferHbarValidator.js";
+export { TransferTokenValidator } from "./TransferTokenValidator.js";
+export { TransferNftValidator } from "./TransferNftValidator.js";

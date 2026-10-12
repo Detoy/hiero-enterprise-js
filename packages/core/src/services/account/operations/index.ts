@@ -33,12 +33,21 @@ export type {
     DeleteAllNftAllowancesOperationOptions,
     NftAllSerialsAllowanceDeletion,
 } from "./DeleteAllNftAllowancesOperation.js";
-export { TransferOperation } from "./TransferOperation.js";
+export { TransferHbarOperation } from "./TransferHbarOperation.js";
 export type {
     TransferHbarOptions,
-    TransferTokenOptions,
-    TransferNftOptions,
     ScheduleTransferHbarOptions,
+    TransferHbarOperationOptions,
+} from "./TransferHbarOperation.js";
+export { TransferTokenOperation } from "./TransferTokenOperation.js";
+export type {
+    TransferTokenOptions,
     ScheduleTransferTokenOptions,
+    TransferTokenOperationOptions,
+} from "./TransferTokenOperation.js";
+export { TransferNftOperation } from "./TransferNftOperation.js";
+export type {
+    TransferNftOptions,
     ScheduleTransferNftOptions,
-} from "./TransferOperation.js";
+    TransferNftOperationOptions,
+} from "./TransferNftOperation.js";
