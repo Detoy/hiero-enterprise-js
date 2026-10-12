@@ -64,6 +64,13 @@ describe("TokenRejectValidator", () => {
                     }),
                 ),
             ).toThrow(/ownerId is required/);
+            expect(() =>
+                validator.validate(
+                    withFungible({
+                        ownerId: null as unknown as string,
+                    }),
+                ),
+            ).toThrow(expect.objectContaining({ code: "INPUT_INVALID" }));
         });
 
         it("throws when ownerId is undefined", () => {

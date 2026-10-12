@@ -21,9 +21,9 @@ export class ScheduleSignValidator {
 
     private validateScheduleId(options: ScheduleSignOptions): void {
         if (options.scheduleId == null) {
-            throw normalizeError(
-                new Error("scheduleId is required."),
+            throw validationError(
                 "ScheduleSignValidator",
+                "scheduleId is required.",
             );
         }
 
