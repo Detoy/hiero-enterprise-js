@@ -20,9 +20,6 @@ Two packages give you typed access to accounts, tokens, NFTs, smart contracts, t
 |---------|-------------|
 | [`@hiero-hackers/enterprise-core`](./packages/core) | SDK write-side: services, transactions, operator keys — use directly or with any framework |
 | [`@hiero-hackers/enterprise-mirror`](./packages/mirror) | Mirror node read-side: repositories, pagination, rate limiting, filters, unit helpers — **zero dependencies, no credentials** |
-| [`@hiero-hackers/enterprise-express`](./packages/express) | **Deprecated**: Express middleware. See [migrating](#migrating-from-the-framework-adapters) |
-| [`@hiero-hackers/enterprise-fastify`](./packages/fastify) | **Deprecated**: Fastify plugin. See [migrating](#migrating-from-the-framework-adapters) |
-| [`@hiero-hackers/enterprise-nest`](./packages/nest) | **Deprecated**: NestJS module. See [migrating](#migrating-from-the-framework-adapters) |
 
 Each package README documents its full surface.
 
@@ -159,7 +156,7 @@ Each [sample](#samples) is a complete, runnable version of the above. Each one a
 
 ## Migrating from the framework adapters
 
-`@hiero-hackers/enterprise-express`, `@hiero-hackers/enterprise-fastify` and `@hiero-hackers/enterprise-nest` are **deprecated** and will be removed in a future release. They still work, but log a one-time `DeprecationWarning` (silence it with `node --no-deprecation`). The reasoning is in [#238](https://github.com/hiero-hackers/hiero-enterprise-js/issues/238).
+`@hiero-hackers/enterprise-express`, `@hiero-hackers/enterprise-fastify` and `@hiero-hackers/enterprise-nest` were removed after 0.3.0; 0.3.0 is their last version. The reasoning is in [#238](https://github.com/hiero-hackers/hiero-enterprise-js/issues/238).
 
 1. Replace the adapter dependency with the two packages it wrapped:
    ```bash
@@ -282,7 +279,7 @@ Publishing is done by [`.github/workflows/release.yml`](./.github/workflows/rele
 
 A release ships **whatever is on `main` at the tagged commit** — it is not tied to any one feature branch. Merge everything you want included first, then cut the release as its own step.
 
-All five packages are versioned **in lockstep**: one version number, one tag. The workflow refuses to publish if the tag, the root `package.json`, and every `packages/*` version don't all agree.
+Both packages are versioned **in lockstep**: one version number, one tag. The workflow refuses to publish if the tag, the root `package.json`, and every `packages/*` version don't all agree.
 
 **To cut a release:**
 
@@ -305,12 +302,12 @@ All five packages are versioned **in lockstep**: one version number, one tag. Th
    ```bash
    git tag -s v0.3.0 -m "v0.3.0" && git push origin v0.3.0
    ```
-7. Watch the **Release** workflow in the Actions tab. On success, all five packages are live on npm at the new version.
+7. Watch the **Release** workflow in the Actions tab. On success, both packages are live on the registry at the new version.
 
 **Notes**
 
 - The tag must equal the workspace version (`v0.3.0` ↔ `0.3.0`), or the workflow fails before publishing — this is a guard, not a suggestion.
-- `pnpm -r publish` skips the `private` root and samples, rewrites each `workspace:*` dependency to the version being published, and publishes in dependency order (`core`/`mirror` before the `express`/`fastify`/`nest` adapters).
+- `pnpm -r publish` skips the `private` root and samples, rewrites each `workspace:*` dependency to the version being published, and publishes in dependency order.
 - Re-pushing a tag for a version that's already on the registry fails cleanly — there is no accidental double-publish. To fix a botched release, bump to the next patch and tag again; published versions are immutable.
 - `workflow_dispatch` can run the workflow manually (e.g. to re-attempt a failed publish); it skips the tag/version guards, so use it deliberately.
 

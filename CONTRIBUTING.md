@@ -268,9 +268,8 @@ check (all from the repo root; CI runs every one of these on push):
 | Converters behave, not just typecheck | `pnpm --filter @hiero-hackers/enterprise-mirror test` | all tests pass |
 | Types survive real mainnet responses | `HIERO_MIRROR_NODE_URL=https://mainnet.mirrornode.hedera.com pnpm --filter @hiero-hackers/examples examples mirror` | live figures, no `undefined`/`NaN` |
 
-The same applies to every package (`core`, `express`, `fastify`,
-`nest`) — substitute the package name in the first two commands. The
-adapters and samples typecheck against the **built** `dist`
+The same applies to `core` — substitute the package name in the first
+two commands. The samples typecheck against the **built** `dist`
 declarations, so a full `pnpm run build` followed by per-package
 `tsc --noEmit` re-validates the exact surface an npm consumer sees.
 
