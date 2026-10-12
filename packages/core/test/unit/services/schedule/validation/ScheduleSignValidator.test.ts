@@ -29,6 +29,11 @@ describe("ScheduleSignValidator", () => {
                     scheduleId: null as unknown as string,
                 }),
             ).toThrow(/scheduleId is required/);
+            expect(() =>
+                validator.validate({
+                    scheduleId: null as unknown as string,
+                }),
+            ).toThrow(expect.objectContaining({ code: "INPUT_INVALID" }));
         });
 
         it("throws when scheduleId is undefined", () => {

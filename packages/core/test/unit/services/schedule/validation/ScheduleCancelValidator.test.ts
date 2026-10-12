@@ -33,6 +33,12 @@ describe("ScheduleCancelValidator", () => {
                     adminKey,
                 }),
             ).toThrow(/scheduleId is required/);
+            expect(() =>
+                validator.validate({
+                    scheduleId: null as unknown as string,
+                    adminKey,
+                }),
+            ).toThrow(expect.objectContaining({ code: "INPUT_INVALID" }));
         });
 
         it("throws when scheduleId is undefined", () => {

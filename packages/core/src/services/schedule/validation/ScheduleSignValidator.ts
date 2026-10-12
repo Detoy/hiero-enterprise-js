@@ -1,4 +1,4 @@
-import { normalizeError } from "../../../errors/index.js";
+import { validationError } from "../../../errors/index.js";
 import type { ScheduleSignOptions } from "../operations/ScheduleSignOperation.js";
 
 /**
@@ -21,9 +21,9 @@ export class ScheduleSignValidator {
 
     private validateScheduleId(options: ScheduleSignOptions): void {
         if (options.scheduleId == null) {
-            throw normalizeError(
-                new Error("scheduleId is required."),
+            throw validationError(
                 "ScheduleSignValidator",
+                "scheduleId is required.",
             );
         }
 
@@ -31,9 +31,9 @@ export class ScheduleSignValidator {
             typeof options.scheduleId === "string" &&
             options.scheduleId.trim() === ""
         ) {
-            throw normalizeError(
-                new Error("scheduleId cannot be an empty string."),
+            throw validationError(
                 "ScheduleSignValidator",
+                "scheduleId cannot be an empty string.",
             );
         }
     }

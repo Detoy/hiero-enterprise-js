@@ -1,4 +1,4 @@
-import { normalizeError } from "../../../errors/index.js";
+import { validationError } from "../../../errors/index.js";
 import type { ScheduleCancelOptions } from "../operations/ScheduleCancelOperation.js";
 
 /**
@@ -22,9 +22,9 @@ export class ScheduleCancelValidator {
 
     private validateScheduleId(options: ScheduleCancelOptions): void {
         if (options.scheduleId == null) {
-            throw normalizeError(
-                new Error("scheduleId is required."),
+            throw validationError(
                 "ScheduleCancelValidator",
+                "scheduleId is required.",
             );
         }
 
@@ -32,18 +32,18 @@ export class ScheduleCancelValidator {
             typeof options.scheduleId === "string" &&
             options.scheduleId.trim() === ""
         ) {
-            throw normalizeError(
-                new Error("scheduleId cannot be an empty string."),
+            throw validationError(
                 "ScheduleCancelValidator",
+                "scheduleId cannot be an empty string.",
             );
         }
     }
 
     private validateAdminKey(options: ScheduleCancelOptions): void {
         if (options.adminKey == null) {
-            throw normalizeError(
-                new Error("adminKey is required."),
+            throw validationError(
                 "ScheduleCancelValidator",
+                "adminKey is required.",
             );
         }
     }
