@@ -1,7 +1,6 @@
 import type { PrivateKey, ScheduleId } from "@hiero-ledger/sdk";
 import { ScheduleDeleteTransaction } from "@hiero-ledger/sdk";
-import type { IHieroContext } from "../../../context/index.js";
-import { TransactionExecutor } from "../../transaction/index.js";
+import { BaseOperation } from "../../transaction/index.js";
 import type { TransactionOptions } from "../../transaction/index.js";
 import { ScheduleCancelValidator } from "../validation/index.js";
 
@@ -22,36 +21,28 @@ export interface ScheduleCancelOptions extends TransactionOptions {
     adminKey: PrivateKey;
 }
 
-export class ScheduleCancelOperation {
-    private readonly executor: TransactionExecutor;
-    private readonly validator: ScheduleCancelValidator;
+export class ScheduleCancelOperation extends BaseOperation<ScheduleCancelOptions> {
+    protected readonly type = "ScheduleDelete";
+    protected readonly serviceName = "ScheduleService";
+    protected readonly methodName = "cancel";
+    protected readonly validator = new ScheduleCancelValidator();
 
-    constructor(private readonly context: IHieroContext) {
-        this.executor = new TransactionExecutor(context);
-        this.validator = new ScheduleCancelValidator();
-    }
-
-    /** Schedule cancel execute handler. */
+    /** Submit a `ScheduleDeleteTransaction` signed by the admin key. */
     async execute(options: ScheduleCancelOptions) {
-        // Validate options before any SDK construction
-        this.validator.validate(options);
         // adminKey must co-sign the ScheduleDeleteTransaction — prepend it so
         // the executor freezes and signs before the operator auto-sign
-        const opts: ScheduleCancelOptions = {
+        return await this.run({
             ...options,
             additionalSigners: [
                 options.adminKey,
                 ...(options.additionalSigners ?? []),
             ],
-        };
-        const tx = new ScheduleDeleteTransaction().setScheduleId(
+        });
+    }
+
+    protected build(options: ScheduleCancelOptions): ScheduleDeleteTransaction {
+        return new ScheduleDeleteTransaction().setScheduleId(
             options.scheduleId,
         );
-        return this.executor.run(tx, opts, {
-            type: "ScheduleDelete",
-            serviceName: "ScheduleService",
-            methodName: "cancel",
-            timestamp: new Date(),
-        });
     }
 }
