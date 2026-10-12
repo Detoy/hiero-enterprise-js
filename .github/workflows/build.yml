@@ -74,7 +74,7 @@ jobs:
             # Sanity check that the package's published types are complete
             - name: Check published types
               run: |
-                  for pkg in core mirror express fastify nest; do
+                  for pkg in core mirror; do
                     echo "::group::attw $pkg"
                     (cd "packages/$pkg" && pnpm exec attw --pack)
                     echo "::endgroup::"

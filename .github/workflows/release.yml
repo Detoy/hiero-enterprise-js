@@ -13,9 +13,8 @@
 # This is a pnpm workspace, so `pnpm -r publish` (not `npm publish`) is used: it
 # skips `private` packages (the samples and the repo root), rewrites every
 # `workspace:*` dependency to the concrete version being published, and
-# publishes in dependency order (core/mirror before the express/fastify/nest
-# adapters). Re-running after a version already exists fails cleanly, so
-# there is no double-publish.
+# publishes in dependency order. Re-running after a version already exists
+# fails cleanly, so there is no double-publish.
 #
 # After a successful publish the workflow also cuts a GitHub Release for the
 # tag, so the Releases tab reflects what is actually on the registry — a bare
@@ -126,9 +125,6 @@ jobs:
 
                   - \`@hiero-hackers/enterprise-core\`
                   - \`@hiero-hackers/enterprise-mirror\`
-                  - \`@hiero-hackers/enterprise-express\`
-                  - \`@hiero-hackers/enterprise-fastify\`
-                  - \`@hiero-hackers/enterprise-nest\`
 
                   Installing requires a GitHub token with \`read:packages\` — see [CONTRIBUTING](https://github.com/hiero-hackers/hiero-enterprise-js/blob/main/CONTRIBUTING.md#installing-the-published-packages).
                   EOF
