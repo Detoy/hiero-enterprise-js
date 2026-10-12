@@ -7,6 +7,7 @@ settings:
 overrides:
   ws: ^8.21.3
   esbuild: ^0.28.2
+  '@grpc/grpc-js': ~1.13.7
 
 importers:
 
@@ -425,8 +426,8 @@ packages:
   '@fastify/proxy-addr@5.1.0':
     resolution: {integrity: sha512-INS+6gh91cLUjB+PVHfu1UqcB76Sqtpyp7bnL+FYojhjygvOPA9ctiD/JDKsyD9Xgu4hUhCSJBPig/w7duNajw==}
 
-  '@grpc/grpc-js@1.12.7':
-    resolution: {integrity: sha512-Tugep4V4GCsN9dSAVkXoBWqJXDoH+NSXd50kFGsm7ZG1tBXFEAnLoxzkGUIksTrDjiaMwlpsbC24oWbESGHpIQ==}
+  '@grpc/grpc-js@1.13.7':
+    resolution: {integrity: sha512-Q6KuzM6QCvNbVWOxf9gHCedUUByhVWsfg6QTN/Jk0KJooG5WfJC3HkHDiVGjCmQFo6mhovEX+8B4phpIOaCr/A==}
     engines: {node: '>=12.10.0'}
 
   '@grpc/proto-loader@0.7.15':
@@ -2756,7 +2757,7 @@ snapshots:
       '@fastify/forwarded': 3.0.2
       ipaddr.js: 2.5.0
 
-  '@grpc/grpc-js@1.12.7':
+  '@grpc/grpc-js@1.13.7':
     dependencies:
       '@grpc/proto-loader': 0.7.15
       '@js-sdsl/ordered-map': 4.4.2
@@ -2797,7 +2798,7 @@ snapshots:
 
   '@hiero-ledger/sdk@2.89.1(bn.js@5.2.3)(supports-color@7.2.0)':
     dependencies:
-      '@grpc/grpc-js': 1.12.7
+      '@grpc/grpc-js': 1.13.7
       '@hiero-ledger/cryptography': 1.22.0(supports-color@7.2.0)
       '@hiero-ledger/proto': 2.31.0(ansi-regex@6.2.2)(ansi-styles@7.0.0)(debug@4.4.1(supports-color@7.2.0))(protobufjs@8.6.6)(strip-ansi@7.1.2)
       ansi-regex: 6.2.2
