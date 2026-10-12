@@ -1,6 +1,5 @@
 import { AccountAllowanceApproveTransaction, TokenId } from "@hiero-ledger/sdk";
-import type { IHieroContext } from "../../../context/index.js";
-import { TransactionExecutor } from "../../transaction/index.js";
+import { BaseOperation } from "../../transaction/index.js";
 import type { TransactionOptions } from "../../transaction/index.js";
 import { DeleteAllNftAllowancesValidator } from "../validation/index.js";
 
@@ -31,30 +30,21 @@ export interface NftAllSerialsAllowanceDeletion {
  */
 export type DeleteAllNftAllowancesOptions = TransactionOptions;
 
-export class DeleteAllNftAllowancesOperation {
-    private readonly executor: TransactionExecutor;
-    private readonly validator: DeleteAllNftAllowancesValidator;
+/** Options for `DeleteAllNftAllowancesOperation`: the deletions plus transaction options. */
+export interface DeleteAllNftAllowancesOperationOptions extends DeleteAllNftAllowancesOptions {
+    /** Approve-for-all-serials deletions to apply. */
+    allowances: NftAllSerialsAllowanceDeletion[];
+}
 
-    constructor(private readonly context: IHieroContext) {
-        this.executor = new TransactionExecutor(context);
-        this.validator = new DeleteAllNftAllowancesValidator();
-    }
+export class DeleteAllNftAllowancesOperation extends BaseOperation<DeleteAllNftAllowancesOperationOptions> {
+    protected readonly type = "AccountAllowanceApprove";
+    protected readonly serviceName = "AccountService";
+    protected readonly methodName = "deleteAllNftAllowances";
+    protected readonly validator = new DeleteAllNftAllowancesValidator();
 
-    /** Delete approve-for-all-serials NFT allowances. */
-    async execute(
-        allowances: NftAllSerialsAllowanceDeletion[],
-        options: DeleteAllNftAllowancesOptions = {},
-        methodName = "deleteAllNftAllowances",
-    ) {
-        this.validator.validate(allowances);
-        const tx = this.build(allowances);
-
-        return await this.executor.run(tx, options, {
-            type: "AccountAllowanceApprove",
-            serviceName: "AccountService",
-            methodName,
-            timestamp: new Date(),
-        });
+    /** Submit the approve-for-all-serials deletions. */
+    async execute(options: DeleteAllNftAllowancesOperationOptions) {
+        return await this.run(options);
     }
 
     /**
@@ -62,12 +52,12 @@ export class DeleteAllNftAllowancesOperation {
      * approve transaction is reused because the protocol routes
      * approve-for-all-serials deletions through the same message type.
      */
-    private build(
-        allowances: NftAllSerialsAllowanceDeletion[],
+    protected build(
+        options: DeleteAllNftAllowancesOperationOptions,
     ): AccountAllowanceApproveTransaction {
         const tx = new AccountAllowanceApproveTransaction();
 
-        for (const allowance of allowances) {
+        for (const allowance of options.allowances) {
             tx.deleteTokenNftAllowanceAllSerials(
                 TokenId.fromString(allowance.tokenId),
                 allowance.ownerAccountId,

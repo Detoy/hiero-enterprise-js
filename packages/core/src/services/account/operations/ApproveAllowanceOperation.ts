@@ -6,7 +6,7 @@ import {
     AccountId,
 } from "@hiero-ledger/sdk";
 import type { IHieroContext } from "../../../context/index.js";
-import { TransactionExecutor } from "../../transaction/index.js";
+import { BaseOperation } from "../../transaction/index.js";
 import type { TransactionOptions } from "../../transaction/index.js";
 import { ApproveAllowanceValidator } from "../validation/index.js";
 
@@ -129,36 +129,33 @@ export interface TokenAllowanceDeletion {
     spenderAccountId: string;
 }
 
-export class ApproveAllowanceOperation {
-    private readonly executor: TransactionExecutor;
-    private readonly validator: ApproveAllowanceValidator;
+export class ApproveAllowanceOperation extends BaseOperation<ApproveAllowanceOptions> {
+    protected readonly type = "AccountAllowanceApprove";
+    protected readonly serviceName = "AccountService";
+    protected readonly validator = new ApproveAllowanceValidator();
 
-    constructor(private readonly context: IHieroContext) {
-        this.executor = new TransactionExecutor(context);
-        this.validator = new ApproveAllowanceValidator();
+    /**
+     * @param context - Hiero context the transaction is sent through
+     * @param methodName - Service method reported in the event, e.g.
+     *   `"approveHbarAllowance"`; several service methods share this operation
+     */
+    constructor(
+        context: IHieroContext,
+        protected readonly methodName: string,
+    ) {
+        super(context);
     }
 
-    /** Approve allowances. */
-    async execute(
-        options: ApproveAllowanceOptions,
-        methodName = "approveAllowance",
-    ) {
-        this.validator.validate(options);
-        const tx = this.build(options);
-
+    /** Submit an `AccountAllowanceApproveTransaction`. */
+    async execute(options: ApproveAllowanceOptions) {
         // The receipt carries nothing allowance-specific
-        return await this.executor.run(tx, options, {
-            type: "AccountAllowanceApprove",
-            serviceName: "AccountService",
-            methodName,
-            timestamp: new Date(),
-        });
+        return await this.run(options);
     }
 
     /**
      * Constructs the `AccountAllowanceApproveTransaction` from options.
      */
-    private build(
+    protected build(
         options: ApproveAllowanceOptions,
     ): AccountAllowanceApproveTransaction {
         const tx = new AccountAllowanceApproveTransaction();

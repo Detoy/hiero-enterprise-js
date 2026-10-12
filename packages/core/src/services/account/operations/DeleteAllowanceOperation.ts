@@ -3,8 +3,7 @@ import {
     TokenId,
     NftId,
 } from "@hiero-ledger/sdk";
-import type { IHieroContext } from "../../../context/index.js";
-import { TransactionExecutor } from "../../transaction/index.js";
+import { BaseOperation } from "../../transaction/index.js";
 import type { TransactionOptions } from "../../transaction/index.js";
 import { DeleteAllowanceValidator } from "../validation/index.js";
 
@@ -35,41 +34,32 @@ export interface NftAllowanceDeletion {
  */
 export type DeleteAllowanceOptions = TransactionOptions;
 
-export class DeleteAllowanceOperation {
-    private readonly executor: TransactionExecutor;
-    private readonly validator: DeleteAllowanceValidator;
+/** Options for `DeleteAllowanceOperation`: the deletions plus transaction options. */
+export interface DeleteAllowanceOperationOptions extends DeleteAllowanceOptions {
+    /** NFT allowance deletions to apply. */
+    allowances: NftAllowanceDeletion[];
+}
 
-    constructor(private readonly context: IHieroContext) {
-        this.executor = new TransactionExecutor(context);
-        this.validator = new DeleteAllowanceValidator();
-    }
+export class DeleteAllowanceOperation extends BaseOperation<DeleteAllowanceOperationOptions> {
+    protected readonly type = "AccountAllowanceDelete";
+    protected readonly serviceName = "AccountService";
+    protected readonly methodName = "deleteNftAllowance";
+    protected readonly validator = new DeleteAllowanceValidator();
 
-    /** Delete NFT allowances. */
-    async execute(
-        allowances: NftAllowanceDeletion[],
-        options: DeleteAllowanceOptions = {},
-        methodName = "deleteNftAllowance",
-    ) {
-        this.validator.validate(allowances);
-        const tx = this.build(allowances);
-
-        return await this.executor.run(tx, options, {
-            type: "AccountAllowanceDelete",
-            serviceName: "AccountService",
-            methodName,
-            timestamp: new Date(),
-        });
+    /** Submit an `AccountAllowanceDeleteTransaction`. */
+    async execute(options: DeleteAllowanceOperationOptions) {
+        return await this.run(options);
     }
 
     /**
      * Constructs the `AccountAllowanceDeleteTransaction` from allowances.
      */
-    private build(
-        allowances: NftAllowanceDeletion[],
+    protected build(
+        options: DeleteAllowanceOperationOptions,
     ): AccountAllowanceDeleteTransaction {
         const tx = new AccountAllowanceDeleteTransaction();
 
-        for (const allowance of allowances) {
+        for (const allowance of options.allowances) {
             for (const serial of allowance.serialNumbers) {
                 const nftId = new NftId(
                     TokenId.fromString(allowance.tokenId),

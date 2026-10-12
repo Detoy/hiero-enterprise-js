@@ -1,14 +1,17 @@
-import type { NftAllowanceDeletion } from "../operations/DeleteAllowanceOperation.js";
+import type {
+    DeleteAllowanceOperationOptions,
+    NftAllowanceDeletion,
+} from "../operations/DeleteAllowanceOperation.js";
 import { validationError } from "../../../errors/index.js";
 
 /**
- * Validates an array of `NftAllowanceDeletion` entries before building the
- * SDK transaction.
+ * Validates the `NftAllowanceDeletion` entries in the options before building
+ * the SDK transaction.
  */
 export class DeleteAllowanceValidator {
-    validate(allowances: NftAllowanceDeletion[]): void {
-        this.validateAtLeastOneAllowance(allowances);
-        this.validateNftAllowances(allowances);
+    validate(options: DeleteAllowanceOperationOptions): void {
+        this.validateAtLeastOneAllowance(options.allowances);
+        this.validateNftAllowances(options.allowances);
     }
 
     private validateAtLeastOneAllowance(

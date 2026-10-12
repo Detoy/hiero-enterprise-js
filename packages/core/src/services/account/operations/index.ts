@@ -24,11 +24,13 @@ export type {
 export { DeleteAllowanceOperation } from "./DeleteAllowanceOperation.js";
 export type {
     DeleteAllowanceOptions,
+    DeleteAllowanceOperationOptions,
     NftAllowanceDeletion,
 } from "./DeleteAllowanceOperation.js";
 export { DeleteAllNftAllowancesOperation } from "./DeleteAllNftAllowancesOperation.js";
 export type {
     DeleteAllNftAllowancesOptions,
+    DeleteAllNftAllowancesOperationOptions,
     NftAllSerialsAllowanceDeletion,
 } from "./DeleteAllNftAllowancesOperation.js";
 export { TransferOperation } from "./TransferOperation.js";

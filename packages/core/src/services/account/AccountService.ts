@@ -54,7 +54,11 @@ export class AccountService {
     private readonly autoCreateOperation: AutoCreateEvmAccountOperation;
     private readonly deleteOperation: DeleteAccountOperation;
     private readonly updateOperation: UpdateAccountOperation;
-    private readonly approveAllowanceOperation: ApproveAllowanceOperation;
+    private readonly approveHbarAllowanceOperation: ApproveAllowanceOperation;
+    private readonly approveTokenAllowanceOperation: ApproveAllowanceOperation;
+    private readonly approveNftAllowanceOperation: ApproveAllowanceOperation;
+    private readonly deleteHbarAllowanceOperation: ApproveAllowanceOperation;
+    private readonly deleteTokenAllowanceOperation: ApproveAllowanceOperation;
     private readonly deleteAllowanceOperation: DeleteAllowanceOperation;
     private readonly deleteAllNftAllowancesOperation: DeleteAllNftAllowancesOperation;
     private readonly transferOperation: TransferOperation;
@@ -67,7 +71,27 @@ export class AccountService {
         this.autoCreateOperation = new AutoCreateEvmAccountOperation(context);
         this.deleteOperation = new DeleteAccountOperation(context);
         this.updateOperation = new UpdateAccountOperation(context);
-        this.approveAllowanceOperation = new ApproveAllowanceOperation(context);
+        this.approveHbarAllowanceOperation = new ApproveAllowanceOperation(
+            context,
+            "approveHbarAllowance",
+        );
+        this.approveTokenAllowanceOperation = new ApproveAllowanceOperation(
+            context,
+            "approveTokenAllowance",
+        );
+        this.approveNftAllowanceOperation = new ApproveAllowanceOperation(
+            context,
+            "approveNftAllowance",
+        );
+        // Allowances are deleted by approving an amount of 0
+        this.deleteHbarAllowanceOperation = new ApproveAllowanceOperation(
+            context,
+            "deleteHbarAllowance",
+        );
+        this.deleteTokenAllowanceOperation = new ApproveAllowanceOperation(
+            context,
+            "deleteTokenAllowance",
+        );
         this.deleteAllowanceOperation = new DeleteAllowanceOperation(context);
         this.deleteAllNftAllowancesOperation =
             new DeleteAllNftAllowancesOperation(context);
@@ -334,10 +358,7 @@ export class AccountService {
                 "hbarAllowances must be provided with at least one entry.",
             );
         }
-        return await this.approveAllowanceOperation.execute(
-            options,
-            "approveHbarAllowance",
-        );
+        return await this.approveHbarAllowanceOperation.execute(options);
     }
 
     /**
@@ -356,10 +377,7 @@ export class AccountService {
                 "tokenAllowances must be provided with at least one entry.",
             );
         }
-        return await this.approveAllowanceOperation.execute(
-            options,
-            "approveTokenAllowance",
-        );
+        return await this.approveTokenAllowanceOperation.execute(options);
     }
 
     /**
@@ -378,10 +396,7 @@ export class AccountService {
                 "nftAllowances must be provided with at least one entry.",
             );
         }
-        return await this.approveAllowanceOperation.execute(
-            options,
-            "approveNftAllowance",
-        );
+        return await this.approveNftAllowanceOperation.execute(options);
     }
 
     /**
@@ -409,11 +424,10 @@ export class AccountService {
                 "nftAllowances must be provided with at least one entry.",
             );
         }
-        return await this.deleteAllowanceOperation.execute(
+        return await this.deleteAllowanceOperation.execute({
+            ...options,
             allowances,
-            options,
-            "deleteNftAllowance",
-        );
+        });
     }
 
     /**
@@ -439,11 +453,10 @@ export class AccountService {
                 "nftAllowances must be provided with at least one entry.",
             );
         }
-        return await this.deleteAllNftAllowancesOperation.execute(
+        return await this.deleteAllNftAllowancesOperation.execute({
+            ...options,
             allowances,
-            options,
-            "deleteAllNftAllowances",
-        );
+        });
     }
 
     /**
@@ -466,17 +479,14 @@ export class AccountService {
                 "hbarAllowances must be provided with at least one entry.",
             );
         }
-        return await this.approveAllowanceOperation.execute(
-            {
-                ...options,
-                hbarAllowances: allowances.map((a) => ({
-                    ownerAccountId: a.ownerAccountId,
-                    spenderAccountId: a.spenderAccountId,
-                    amount: 0,
-                })),
-            },
-            "deleteHbarAllowance",
-        );
+        return await this.deleteHbarAllowanceOperation.execute({
+            ...options,
+            hbarAllowances: allowances.map((a) => ({
+                ownerAccountId: a.ownerAccountId,
+                spenderAccountId: a.spenderAccountId,
+                amount: 0,
+            })),
+        });
     }
 
     /**
@@ -499,18 +509,15 @@ export class AccountService {
                 "tokenAllowances must be provided with at least one entry.",
             );
         }
-        return await this.approveAllowanceOperation.execute(
-            {
-                ...options,
-                tokenAllowances: allowances.map((a) => ({
-                    tokenId: a.tokenId,
-                    ownerAccountId: a.ownerAccountId,
-                    spenderAccountId: a.spenderAccountId,
-                    amount: 0,
-                })),
-            },
-            "deleteTokenAllowance",
-        );
+        return await this.deleteTokenAllowanceOperation.execute({
+            ...options,
+            tokenAllowances: allowances.map((a) => ({
+                tokenId: a.tokenId,
+                ownerAccountId: a.ownerAccountId,
+                spenderAccountId: a.spenderAccountId,
+                amount: 0,
+            })),
+        });
     }
 
     // Crypto Transfers
