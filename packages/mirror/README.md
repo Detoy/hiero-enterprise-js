@@ -10,8 +10,6 @@ Mirror node reads are free and need no keys, so this package has no SDK, no cred
 npm install @hiero-hackers/enterprise-mirror
 ```
 
-The package is published to GitHub Packages; see [Install](../../README.md#install) for the registry setup.
-
 ## Usage
 
 ```ts

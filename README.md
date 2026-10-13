@@ -11,48 +11,25 @@ TypeScript libraries for building Node.js services on [Hiero](https://hiero.org)
 
 ## Install
 
-Requires Node.js 18 or later and a GitHub token with the `read:packages` scope. The packages are published to GitHub Packages, which asks for a token even for public packages.
+This repository publishes two packages. Both need Node.js 18 or later.
 
-Add the registry to your project's `.npmrc`:
-
-```ini
-@hiero-hackers:registry=https://npm.pkg.github.com/
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
-
-Then install:
+**Core**, to send transactions:
 
 ```sh
-export NODE_AUTH_TOKEN=<your GitHub token>
-npm install @hiero-hackers/enterprise-core @hiero-hackers/enterprise-mirror
+npm install @hiero-hackers/enterprise-core
 ```
 
-Install only `enterprise-mirror` if you just read data.
+**Mirror**, to read from the mirror node:
+
+```sh
+npm install @hiero-hackers/enterprise-mirror
+```
+
+Use them together or on their own.
 
 ## Usage
 
-### Read
-
-Reads need no account:
-
-```ts
-import {
-  AccountRepository,
-  createMirrorNodeClient,
-  tinybarToHbarExact,
-} from "@hiero-hackers/enterprise-mirror";
-
-const mirror = createMirrorNodeClient({ network: "mainnet" });
-const account = await new AccountRepository(mirror).findByAccountId("0.0.800");
-
-console.log(`${account.accountId} holds ${tinybarToHbarExact(account.balance)} ℏ`);
-```
-
-```text
-0.0.800 holds 133361877.79077463 ℏ
-```
-
-### Write
+### Core
 
 Writes need an operator account to sign and pay the fee. On testnet you can create one for free in the [Hedera Developer Portal](https://portal.hedera.com). Set it in the environment:
 
@@ -86,6 +63,27 @@ message 1 on topic 0.0.5005123
 ```
 
 In a server, create the context and services once at startup and call `context.close()` on shutdown.
+
+### Mirror
+
+Reads need no account:
+
+```ts
+import {
+  AccountRepository,
+  createMirrorNodeClient,
+  tinybarToHbarExact,
+} from "@hiero-hackers/enterprise-mirror";
+
+const mirror = createMirrorNodeClient({ network: "mainnet" });
+const account = await new AccountRepository(mirror).findByAccountId("0.0.800");
+
+console.log(`${account.accountId} holds ${tinybarToHbarExact(account.balance)} ℏ`);
+```
+
+```text
+0.0.800 holds 133361877.79077463 ℏ
+```
 
 ## Architecture
 
@@ -155,7 +153,6 @@ try {
 ## Limitations
 
 - **Pre-1.0.** Minor releases can break the API.
-- **GitHub Packages only.** Not on npmjs.org yet.
 - **Node.js only.** CI tests Node.js 22 and 24.
 - **Not every SDK feature is wrapped.** Batch transactions, hooks and fee estimates are on the [roadmap](https://github.com/hiero-hackers/hiero-enterprise-js/milestones). Until then, `context.client` gives you the SDK client directly.
 
