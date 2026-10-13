@@ -71,8 +71,13 @@ Pass a config object to `new HieroContext({ ... })`, or call it with no argument
 | `HIERO_NETWORK_NODES` | `networkNodes` | Custom networks only |
 | `HIERO_MIRROR_NETWORK` | `mirrorNetwork` | Custom networks only |
 | `HIERO_MIRROR_NODE_URL` | `mirrorNodeUrl` | Custom networks only |
+| `HIERO_REQUEST_TIMEOUT_MS` | `requestTimeoutMs` | Optional. Default 120000 |
+| `HIERO_GRPC_DEADLINE_MS` | `grpcDeadlineMs` | Optional. Default 10000 |
+| `HIERO_MAX_ATTEMPTS` | `maxAttempts` | Optional. Default 10 |
+| `HIERO_MIN_BACKOFF_MS` | `minBackoffMs` | Optional. Default 250 |
+| `HIERO_MAX_BACKOFF_MS` | `maxBackoffMs` | Optional. Default 8000 |
 
-`context.config` is a copy with the key replaced by `"[redacted]"`, so it is safe to log.
+A numeric variable that is not a positive number throws a `CONFIG_INVALID` error. `context.config` is a copy with the key replaced by `"[redacted]"`, so it is safe to log.
 
 ## Balances
 
