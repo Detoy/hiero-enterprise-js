@@ -11,7 +11,7 @@ both, see the [repository README](../../README.md); the
 npm install @hiero-hackers/enterprise-core
 ```
 
-> **Note:** not yet published to npm — see [CONTRIBUTING](../../CONTRIBUTING.md) to run from the repo.
+The package is published to GitHub Packages; see [Install](../../README.md#install) for the registry setup.
 
 ```ts
 import { HieroContext, AccountService } from "@hiero-hackers/enterprise-core";
