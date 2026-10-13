@@ -111,11 +111,26 @@ export function resolveConfigFromEnv(): HieroConfig | null {
         networkNodes,
         mirrorNetwork: mirrorNetwork?.length ? mirrorNetwork : undefined,
         mirrorNodeUrl: process.env["HIERO_MIRROR_NODE_URL"] || undefined,
-        requestTimeoutMs: positiveNumberFromEnv("HIERO_REQUEST_TIMEOUT_MS"),
-        grpcDeadlineMs: positiveNumberFromEnv("HIERO_GRPC_DEADLINE_MS"),
-        maxAttempts: positiveNumberFromEnv("HIERO_MAX_ATTEMPTS"),
-        minBackoffMs: positiveNumberFromEnv("HIERO_MIN_BACKOFF_MS"),
-        maxBackoffMs: positiveNumberFromEnv("HIERO_MAX_BACKOFF_MS"),
+        requestTimeoutMs: positiveNumberFromEnv(
+            "HIERO_REQUEST_TIMEOUT_MS",
+            process.env["HIERO_REQUEST_TIMEOUT_MS"],
+        ),
+        grpcDeadlineMs: positiveNumberFromEnv(
+            "HIERO_GRPC_DEADLINE_MS",
+            process.env["HIERO_GRPC_DEADLINE_MS"],
+        ),
+        maxAttempts: positiveNumberFromEnv(
+            "HIERO_MAX_ATTEMPTS",
+            process.env["HIERO_MAX_ATTEMPTS"],
+        ),
+        minBackoffMs: positiveNumberFromEnv(
+            "HIERO_MIN_BACKOFF_MS",
+            process.env["HIERO_MIN_BACKOFF_MS"],
+        ),
+        maxBackoffMs: positiveNumberFromEnv(
+            "HIERO_MAX_BACKOFF_MS",
+            process.env["HIERO_MAX_BACKOFF_MS"],
+        ),
     };
 }
 
@@ -123,8 +138,10 @@ export function resolveConfigFromEnv(): HieroConfig | null {
  * Read a numeric environment variable. Returns `undefined` when unset or
  * empty, so the SDK default applies.
  */
-function positiveNumberFromEnv(name: string): number | undefined {
-    const raw = process.env[name];
+function positiveNumberFromEnv(
+    name: string,
+    raw: string | undefined,
+): number | undefined {
     if (raw === undefined || raw.trim() === "") return undefined;
     const value = Number(raw);
     if (!Number.isFinite(value) || value <= 0) {
