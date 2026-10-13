@@ -1,315 +1,170 @@
 # Hiero Enterprise JS
 
+TypeScript libraries for building Node.js services on [Hiero](https://hiero.org) networks: send transactions with `@hiero-hackers/enterprise-core`, and read the network's history with `@hiero-hackers/enterprise-mirror`.
+
 [![CI](../../actions/workflows/build.yml/badge.svg)](../../actions/workflows/build.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/Jexsie/4a3c4fd2dae12f95e6177ae3bc807403/raw/hiero-enterprise-js-coverage.json)](../../actions/workflows/build.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/hiero-hackers/hiero-enterprise-js/badge)](https://scorecard.dev/viewer/?uri=github.com/hiero-hackers/hiero-enterprise-js)
-[![Node.js](https://img.shields.io/badge/Node.js-≥18-green.svg)](https://nodejs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 
-Integrating the Hiero SDK into a production Node.js service has historically meant a lot of glue code that has nothing to do with your actual business logic: instantiating clients, managing config, plumbing operator keys, handling errors. 
-Similarly, reading data from the mirror node has meant hand-rolling REST calls, pagination, and rate limiting.
+The [Hiero JavaScript SDK](https://github.com/hiero-ledger/hiero-sdk-js) exposes every transaction and query the network supports, one builder class at a time. A production service needs more around those builders: one shared client, an operator key that never ends up in a log, input checked before a fee is spent, errors your code can branch on, and reads that page through large histories without hitting rate limits. Hiero Enterprise JS provides that layer, so your code calls `accounts.transferHbar(...)` and gets a plain object back.
 
-Hiero Enterprise JS does that work for you. 
+- **A service for each part of the network.** Accounts, tokens and NFTs, topics, files, smart contracts, scheduled transactions and network queries: more than 90 methods across seven services.
+- **Checked before it is sent.** Every operation validates its input first, so a missing account ID fails with `INPUT_INVALID` before any fee is paid.
+- **Errors you can handle.** Every failure is a `HieroError` or `MirrorError` with a stable `code`, such as `NOT_FOUND`, `TIMED_OUT` or `CONFIG_INVALID`.
+- **Multi-party signing.** Many write methods have a `schedule…` variant that returns a schedule ID for other keys to sign later.
+- **Observable.** Transaction listeners receive an event before and after every transaction and query, for logging, metrics or audit trails.
+- **The whole mirror node REST API, with no dependencies.** Typed repositories, pagination, client-side rate limiting and numbers that keep their full precision. It needs no keys, so read-only tools install it on its own.
 
-Two packages give you typed access to accounts, tokens, NFTs, smart contracts, topics, and mirror node queries, and work the same in a script, a worker, or any Node.js framework. Write operations (creating accounts, minting tokens) go through the network client directly. Read operations (looking up balances, browsing NFTs) go through the mirror node REST API, which is faster and doesn't carry transaction fees.
+## How it fits together
 
-## Packages
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/architecture-dark.svg">
+  <img alt="Your application uses enterprise-core to send signed transactions to the consensus nodes over gRPC, and enterprise-mirror to read history from the mirror node over REST. The consensus nodes stream their records to the mirror node." src=".github/assets/architecture-light.svg">
+</picture>
 
-| Package | Description |
-|---------|-------------|
-| [`@hiero-hackers/enterprise-core`](./packages/core) | SDK write-side: services, transactions, operator keys — use directly or with any framework |
-| [`@hiero-hackers/enterprise-mirror`](./packages/mirror) | Mirror node read-side: repositories, pagination, rate limiting, filters, unit helpers — **zero dependencies, no credentials** |
+A Hiero network has two kinds of servers, and each package talks to one of them.
 
-Each package README documents its full surface.
+- **Consensus nodes** order and execute transactions. Each transaction is signed by an operator account and paid for in HBAR (ℏ). `enterprise-core` wraps the SDK for this side. A `HieroContext` holds the network settings, the operator key and the SDK client; the services take the context and run each call through the same steps: validate, build, sign, submit and wait for the receipt.
+- **Mirror nodes** receive the consensus nodes' records and serve them through a free REST API. `enterprise-mirror` is a typed client for that API. It has no dependencies and needs no account, only `fetch`.
 
-### Which package do I install?
+Most services use both: core for writes, mirror for lookups and history. `enterprise-core` also reads balances from the mirror node, because the SDK does.
 
-| You are building… | Install / import | Reads | Writes |
-|---|---|---|---|
-| An Express / Fastify / NestJS service | `@hiero-hackers/enterprise-core` + `@hiero-hackers/enterprise-mirror`, wired once at startup ([how](#using-with-express-fastify-or-nestjs)) | ✓ | ✓ |
-| A read-only tool, dashboard, or indexer | `@hiero-hackers/enterprise-mirror` only — no credentials needed | ✓ | — |
-| A script or worker that submits transactions | `@hiero-hackers/enterprise-core` (add `mirror` if it also reads) | opt-in | ✓ |
+## Install
 
-## Quick Start
+You need:
 
-### Standalone (no framework)
+- **Node.js 18 or later.** CI tests on Node.js 22 and 24.
+- **A GitHub token with the `read:packages` scope.** The packages are published to the GitHub Packages npm registry, which requires a token even for public packages.
+- **A Hiero account, for writes only.** On testnet you can create one for free in the [Hedera Developer Portal](https://portal.hedera.com).
+
+Point the `@hiero-hackers` scope at GitHub Packages in your project's `.npmrc`:
+
+```ini
+@hiero-hackers:registry=https://npm.pkg.github.com/
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+Then install one or both packages:
 
 ```bash
-npm install @hiero-hackers/enterprise-core
+export NODE_AUTH_TOKEN=<your GitHub token>
+npm install @hiero-hackers/enterprise-core @hiero-hackers/enterprise-mirror
 ```
 
-```bash
-npm install @hiero-hackers/enterprise-mirror   # read-only? this is the only package you need
-```
+## Quick start
 
-Reads need no credentials at all:
+### Read from the mirror node
+
+Reads need no account and no keys. This looks up the balance of mainnet account `0.0.800`:
 
 ```ts
-import { createMirrorNodeClient, AccountRepository } from '@hiero-hackers/enterprise-mirror';
+import {
+  AccountRepository,
+  createMirrorNodeClient,
+  tinybarToHbarExact,
+} from "@hiero-hackers/enterprise-mirror";
 
-const mirror = createMirrorNodeClient({ network: 'mainnet' });
-const account = await new AccountRepository(mirror).findByAccountId('0.0.800');
+const mirror = createMirrorNodeClient({ network: "mainnet" });
+const account = await new AccountRepository(mirror).findByAccountId("0.0.800");
+
+console.log(`${account.accountId} holds ${tinybarToHbarExact(account.balance)} ℏ`);
 ```
 
-Writes go through core, with an operator account:
-
-```ts
-import { HieroContext, AccountService } from '@hiero-hackers/enterprise-core';
-
-const context = new HieroContext({
-  network: 'testnet',
-  operatorId: '0.0.12345',
-  operatorKey: 'your_private_key_here',
-  operatorKeyType: 'ed25519',
-});
-
-const accounts = new AccountService(context);
-const account = await accounts.createAccount({ publicKey: '...', initialBalance: 10 });
-console.log(account.accountId);
-
-context.close();
+```text
+0.0.800 holds 133361877.79077463 ℏ
 ```
 
-### Configuration from the environment
+The balance is different every time you run it. Every repository works the same way: `findBy…` methods return one object, and listings return a `Page` with a `next()` method.
 
-Called without arguments, `new HieroContext()` and `createMirrorNodeClient()` read their config from environment variables:
+### Send a transaction
+
+Writes need an operator account to sign and pay. Set it in the environment:
 
 ```bash
 HIERO_NETWORK=testnet
 HIERO_OPERATOR_ID=0.0.12345
-HIERO_OPERATOR_KEY=your_private_key_here
-HIERO_OPERATOR_KEY_TYPE=ECDSA
+HIERO_OPERATOR_KEY=<your private key>
+HIERO_OPERATOR_KEY_TYPE=ecdsa   # or ed25519, or der
 ```
 
-`HIERO_OPERATOR_KEY_TYPE` is **required** and tells the SDK how to parse your private key. Hiero supports multiple key algorithms and there is no reliable way to auto-detect the format from the raw key string alone. Accepted values:
-
-| Value | Description |
-|-------|-------------|
-| `ECDSA` | ECDSA secp256k1 key — compatible with EVM wallets and most providers |
-| `ED25519` | Ed25519 key — native Hiero key type |
-| `DER` | DER-encoded key (hex with ASN.1 headers, e.g. `302e020100...`) |
-
-## Using with Express, Fastify, or NestJS
-
-No framework-specific package is needed. Create the services once at startup, share them across requests, and close the context on shutdown:
+Then create a topic, an append-only message log, and write a message to it:
 
 ```ts
-import { HieroContext, AccountService, TopicService } from '@hiero-hackers/enterprise-core';
-import { createMirrorNodeClient, createMirrorRepositories } from '@hiero-hackers/enterprise-mirror';
+import { HieroContext, TopicService } from "@hiero-hackers/enterprise-core";
 
-export function createHiero() {
-  const context = new HieroContext(); // reads HIERO_* env vars
-  return {
-    accountService: new AccountService(context),
-    topicService: new TopicService(context),
-    ...createMirrorRepositories(createMirrorNodeClient()), // accountRepository, tokenRepository, …
-    close: () => context.close(),
-  };
-}
-```
+const context = new HieroContext(); // reads the HIERO_* variables
+const topics = new TopicService(context);
 
-**Express**
-
-```ts
-const hiero = createHiero();
-const app = express();
-
-app.get('/balance', async (_req, res) => {
-  res.json(await hiero.accountService.getOperatorAccountBalance());
+const { topicId } = await topics.createTopic({ topicMemo: "order events" });
+const { sequenceNumber } = await topics.submitMessage({
+  topicId,
+  message: "order 42 shipped",
 });
 
-const server = app.listen(3000);
-process.once('SIGTERM', () => server.close(() => hiero.close()));
+console.log(`message ${sequenceNumber} on topic ${topicId}`);
+context.close();
 ```
 
-**Fastify**
-
-```ts
-const hiero = createHiero();
-const app = Fastify();
-app.addHook('onClose', () => hiero.close());
-
-app.get('/balance', () => hiero.accountService.getOperatorAccountBalance());
+```text
+message 1 on topic 0.0.5005123
 ```
 
-**NestJS**: register the classes as providers with factories, so controllers inject them by type:
+`HIERO_OPERATOR_KEY_TYPE` is required, because a raw private key string doesn't say which algorithm it belongs to. You can also pass the same settings to `new HieroContext({ ... })` in code. In a server, create the context and services once at startup and call `context.close()` on shutdown.
+
+## What you can do
+
+| Service | What it covers |
+|---|---|
+| `AccountService` | Create, update and delete accounts; transfer HBAR, tokens and NFTs; approve and remove allowances; read balances; verify signatures |
+| `TokenService` | Create fungible tokens and NFT collections; mint, burn, wipe, freeze, pause, KYC, fee schedules; airdrops and claims; token and NFT info |
+| `TopicService` | Create, update and delete topics; submit messages; subscribe to a topic's message stream |
+| `FileService` | Create, append to, update and delete files; read contents and info. Large contents are split across transactions for you. |
+| `ContractService` | Deploy, execute, update and delete smart contracts; call read-only functions; read info and bytecode |
+| `ScheduleService` | Sign, cancel and inspect scheduled transactions created by the `schedule…` methods |
+| `NetworkService` | Fetch transaction receipts and records, and the network's version |
+
+On the read side, `createMirrorRepositories(mirror)` gives you a repository for accounts, tokens, NFTs, topics, transactions, contracts, blocks, schedules and network state. `collectAll` and `paginate` drain or stream any listing, and unit helpers convert tinybars to HBAR, apply token decimals and turn dates into consensus timestamps.
+
+Each package README lists everything it exports: [core](./packages/core/README.md) and [mirror](./packages/mirror/README.md). [`samples/examples`](./samples/examples) has a runnable script for every service, and the [Express, Fastify and NestJS samples](./samples) show both packages wired into a web server.
+
+## Handling errors
+
+Every error from `enterprise-core` is a `HieroError` with a `code`, and transaction failures carry the `transactionId` as well:
 
 ```ts
-@Global()
-@Module({
-  providers: [
-    { provide: HieroContext, useFactory: () => new HieroContext() },
-    { provide: MirrorNodeClient, useFactory: () => createMirrorNodeClient() },
-    { provide: AccountService, useFactory: (c: HieroContext) => new AccountService(c), inject: [HieroContext] },
-    { provide: AccountRepository, useFactory: (m: MirrorNodeClient) => new AccountRepository(m), inject: [MirrorNodeClient] },
-  ],
-  exports: [HieroContext, MirrorNodeClient, AccountService, AccountRepository],
-})
-export class HieroModule implements OnApplicationShutdown {
-  constructor(private readonly context: HieroContext) {}
-  onApplicationShutdown() { this.context.close(); }
+import {
+  AccountService,
+  HieroContext,
+  HieroError,
+  HieroErrorCodes,
+} from "@hiero-hackers/enterprise-core";
+
+const context = new HieroContext();
+const accounts = new AccountService(context);
+
+try {
+  await accounts.transferHbar("0.0.1234", 5, context.operatorAccountId);
+} catch (err) {
+  if (err instanceof HieroError && err.code === HieroErrorCodes.InputInvalid) {
+    // Rejected before anything was sent; no fee was charged.
+  }
+  throw err;
 }
 ```
 
-Each [sample](#samples) is a complete, runnable version of the above. Each one also maps `HieroError` / `MirrorError` codes to HTTP statuses (for example `NOT_FOUND` to 404 and `TIMED_OUT` to 504) instead of returning every failure as a 500.
+`enterprise-mirror` throws `MirrorError` the same way, for example with code `NOT_FOUND` for an unknown account.
 
-## Migrating from the framework adapters
+## Status and limitations
 
-`@hiero-hackers/enterprise-express`, `@hiero-hackers/enterprise-fastify` and `@hiero-hackers/enterprise-nest` were removed after 0.3.0; 0.3.0 is their last version. The reasoning is in [#238](https://github.com/hiero-hackers/hiero-enterprise-js/issues/238).
-
-1. Replace the adapter dependency with the two packages it wrapped:
-   ```bash
-   npm uninstall @hiero-hackers/enterprise-express   # or -fastify / -nest
-   npm install @hiero-hackers/enterprise-core @hiero-hackers/enterprise-mirror
-   ```
-2. Add a `createHiero()` (Express/Fastify) or `HieroModule` (NestJS) to your app, as shown [above](#using-with-express-fastify-or-nestjs). It reads the same `HIERO_*` environment variables, so no config changes are needed.
-3. Update call sites:
-
-   | Before | After |
-   |---|---|
-   | `app.use(hieroMiddleware())` | `const hiero = createHiero()` |
-   | `req.hiero.accountService` | `hiero.accountService` |
-   | `await app.register(hieroPlugin)` | `const hiero = createHiero()` + `app.addHook('onClose', () => hiero.close())` |
-   | `app.hiero.tokenRepository` | `hiero.tokenRepository` |
-   | `HieroModule.forRoot()` from `enterprise-nest` | your own `HieroModule` |
-   | `import { AccountService } from '@hiero-hackers/enterprise-nest'` | `import { AccountService } from '@hiero-hackers/enterprise-core'` |
-   | `import { AccountRepository } from '@hiero-hackers/enterprise-nest'` | `import { AccountRepository } from '@hiero-hackers/enterprise-mirror'` |
-   | `@InjectHieroContext()` | inject `HieroContext` by type |
-
-4. Close the context on shutdown: the Express middleware never did this, so this step fixes a connection leak.
-
-## Architecture
-
-```
-      Your app: script, worker, Express / Fastify / NestJS
-              │                          │
-              ▼                          ▼
-┌───────────────────────┐  ┌────────────────────────┐
-│  enterprise-core      │  │  enterprise-mirror     │
-│  SDK write-side       │  │  REST read-side        │
-│  Account / File /     │  │  9 repositories        │
-│  Token / Contract /   │  │  pagination + filters  │
-│  Topic / Schedule /   │  │  rate limiting, units  │
-│  Network services     │  │                        │
-│  HieroContext         │  │  MirrorNodeClient      │
-│  deps: @hiero-ledger  │  │  deps: none (fetch)    │
-└──────────┬────────────┘  └───────────┬────────────┘
-           ▼ gRPC (signed txns)        ▼ REST (free reads)
-                      Hiero Network
-                   (testnet / mainnet)
-```
-
-`@hiero-hackers/enterprise-core` owns the SDK write-side (services, transactions, operator keys).
-
-`@hiero-hackers/enterprise-mirror` owns the REST read-side and has **zero dependencies** — analytics consumers can install it alone, with no SDK and no credentials. 
-
-Use either package on its own, or both together.
-
-Writes go through the Hiero SDK — transactions that go on-chain, signed by the operator. Reads go through the mirror node, which doesn't cost fees and returns historical or indexed data.
-
-## Services
-
-| Service | What it covers |
-|--------|---------------|
-| `AccountService` | Create, update, delete, approve allowances, check balances |
-| `FileService` | Store and retrieve file content on-chain |
-| `TokenService` | Create, mint, burn, and transfer fungible tokens and NFTs |
-| `ContractService` | Deploy and call EVM-compatible smart contracts |
-| `TopicService` | Create topics, manage keys, submit messages |
-| `ScheduleService` | Create and sign scheduled transactions |
-| `NetworkService` | Network-level queries via the SDK client |
-
-## Mirror Node Queries — `@hiero-hackers/enterprise-mirror`
-
-All mirror node REST reads live in the standalone, **dependency-free**
-[`@hiero-hackers/enterprise-mirror`](./packages/mirror) package — no SDK, no
-operator keys, just `fetch`. It covers the **complete mirror node REST
-API** (all 47 paths and 48 operations of the OpenAPI spec, including the
-contracts/EVM family, `contracts/call`, and HIP-1313 fee estimation) with
-typed repositories for accounts, blocks, contracts, NFTs, tokens, topics,
-transactions, schedules and network state, plus:
-
-- **Continuable pagination** — every list returns a `Page` with a bound
-  `next()`; `collectAll` / `paginate` drain or stream any listing.
-- **Pro-active rate limiting** — `maxConcurrent` + `maxRequestsPerSecond`
-  keep large pulls under the mirror node's limits before any 429.
-- **Rich filters** — `limit`/`order`, transaction type + consensus-timestamp
-  windows (time-series), point-in-time reads, and balance thresholds.
-- **Unit helpers** — tinybar⇄ℏ, token decimals, `Date`⇄consensus timestamps.
-
-```ts
-import { createMirrorNodeClient, TransactionRepository, collectAll } from '@hiero-hackers/enterprise-mirror';
-
-const mirror = createMirrorNodeClient({ network: 'mainnet', mirrorNodeMaxRequestsPerSecond: 50 });
-const transfers = await collectAll(
-  await new TransactionRepository(mirror).find({
-    transactionType: 'CRYPTOTRANSFER',
-    timestamp: { gte: '1700000000.0', lt: '1700086400.0' },
-  }),
-  { maxPages: 10 },
-);
-```
-
-See the [mirror package README](./packages/mirror/README.md) for the full
-guide.
-
-## Samples
-
-Working examples are in [`samples/`](./samples). Each one is a minimal but real service you can run against testnet.
-
-| Sample | Framework |
-|--------|-----------|
-| [examples](./samples/examples) | Standalone `@hiero-hackers/enterprise-core` scripts |
-| [express-sample](./samples/express-sample) | Express, using core + mirror directly |
-| [fastify-sample](./samples/fastify-sample) | Fastify, using core + mirror directly |
-| [nest-sample](./samples/nest-sample) | NestJS, using core + mirror directly |
-
-## Changelog
-
-Notable changes for each release are recorded in [CHANGELOG.md](./CHANGELOG.md).
+- **Pre-1.0.** Minor releases can contain breaking changes, and the changelog marks each one.
+- **GitHub Packages only.** The packages are not on npmjs.org yet, so every install needs the token above.
+- **Node.js only.** `enterprise-core` uses the SDK's gRPC client. `enterprise-mirror` only needs `fetch`, but only Node.js is tested.
+- **Not every SDK feature is wrapped yet.** Batch transactions, hooks and fee estimates are among the gaps tracked in the [SDK parity milestone](https://github.com/hiero-hackers/hiero-enterprise-js/milestones). Until then, `context.client` is the SDK `Client`, so you can still run any SDK transaction yourself.
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to report bugs, request features, and submit pull requests. All commits require a DCO sign-off (`git commit -s`) and GPG signing.
-
-## Releasing
-
-Publishing is done by [`.github/workflows/release.yml`](./.github/workflows/release.yml) — it runs when a `v*.*.*` tag is pushed and publishes every public `@hiero-hackers/*` package to the [GitHub Packages npm registry](https://github.com/orgs/hiero-hackers/packages?repo_name=hiero-enterprise-js), then cuts a GitHub Release for the tag. Developers never publish from their machines, and there is no publish token to manage: the workflow authenticates with its own `GITHUB_TOKEN` (`packages: write`). Consumers need a token with `read:packages`; see [Installing the published packages](./CONTRIBUTING.md#installing-the-published-packages).
-
-A release ships **whatever is on `main` at the tagged commit** — it is not tied to any one feature branch. Merge everything you want included first, then cut the release as its own step.
-
-Both packages are versioned **in lockstep**: one version number, one tag. The workflow refuses to publish if the tag, the root `package.json`, and every `packages/*` version don't all agree.
-
-**To cut a release:**
-
-1. Make sure everything intended for the release is merged to `main` and CI is green.
-2. Choose the new version (pre-1.0: minor `0.x.0` for features, patch `0.0.x` for fixes) and bump the root **and** every publishable package to it, in lockstep:
-   ```bash
-   NEW=0.3.0
-   pnpm --filter "./packages/*" exec npm pkg set version="$NEW"  # the 5 published packages
-   npm pkg set version="$NEW"                                    # repo root
-   ```
-   (The private `samples/*` are never published, so leave them alone.)
-3. Optionally sanity-check what would go out — this rewrites `workspace:*` to real versions and packs, without uploading:
-   ```bash
-   pnpm install --frozen-lockfile && pnpm -r run build
-   pnpm -r publish --dry-run --no-git-checks
-   ```
-4. In [`CHANGELOG.md`](./CHANGELOG.md), rename the `Unreleased` heading to the new version and date, point its link at the `vPREVIOUS...vNEW` comparison, and add a fresh `Unreleased` section above it comparing `vNEW...HEAD`.
-5. Open a PR with the bump and changelog, get it reviewed, and merge to `main`.
-6. From the merged commit on `main`, push a **signed** tag that matches the version (note the `v` prefix):
-   ```bash
-   git tag -s v0.3.0 -m "v0.3.0" && git push origin v0.3.0
-   ```
-7. Watch the **Release** workflow in the Actions tab. On success, both packages are live on the registry at the new version.
-
-**Notes**
-
-- The tag must equal the workspace version (`v0.3.0` ↔ `0.3.0`), or the workflow fails before publishing — this is a guard, not a suggestion.
-- `pnpm -r publish` skips the `private` root and samples, rewrites each `workspace:*` dependency to the version being published, and publishes in dependency order.
-- Re-pushing a tag for a version that's already on the registry fails cleanly — there is no accidental double-publish. To fix a botched release, bump to the next patch and tag again; published versions are immutable.
-- `workflow_dispatch` can run the workflow manually (e.g. to re-attempt a failed publish); it skips the tag/version guards, so use it deliberately.
+Bug reports, ideas and pull requests are welcome; start with [CONTRIBUTING.md](./CONTRIBUTING.md). Maintainers cut releases as described in [RELEASE.md](./RELEASE.md). For questions, open an [issue](https://github.com/hiero-hackers/hiero-enterprise-js/issues).
 
 ## License
 

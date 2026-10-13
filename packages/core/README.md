@@ -3,10 +3,9 @@
 The write side of Hiero for Node.js: typed services over the SDK for
 transactions that go on-chain — signed by your operator account,
 carrying fees. The read side (free mirror node REST queries) lives in
-[`@hiero-hackers/enterprise-mirror`](../mirror). For an
-Express/Fastify/NestJS service, install both and wire them once at
-startup; see
-[Using with Express, Fastify, or NestJS](../../README.md#using-with-express-fastify-or-nestjs).
+[`@hiero-hackers/enterprise-mirror`](../mirror). For an overview of
+both, see the [repository README](../../README.md); the
+[samples](../../samples) show them wired into Express, Fastify and NestJS.
 
 ```bash
 npm install @hiero-hackers/enterprise-core

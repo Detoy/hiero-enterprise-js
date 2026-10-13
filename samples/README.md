@@ -8,7 +8,7 @@ Sample projects demonstrating how to use `@hiero-hackers/enterprise-core` and `@
 | [fastify-sample](./fastify-sample) | Fastify | 3001 | [`src/hiero.ts`](./fastify-sample/src/hiero.ts): same, closed from an `onClose` hook |
 | [nest-sample](./nest-sample) | NestJS | 3002 | [`src/hiero.module.ts`](./nest-sample/src/hiero.module.ts): providers injected by type |
 
-Each sample also maps `HieroError` / `MirrorError` codes to HTTP statuses, so a missing account returns 404 rather than 500. These samples replace the removed `@hiero-hackers/enterprise-express`, `-fastify` and `-nest` packages; see [Migrating from the framework adapters](../README.md#migrating-from-the-framework-adapters).
+Each sample also maps `HieroError` / `MirrorError` codes to HTTP statuses, so a missing account returns 404 rather than 500.
 
 Also in this directory: [examples](./examples), a gallery of standalone
 scripts by domain (account, token, topic, …, mirror). The mirror scripts
