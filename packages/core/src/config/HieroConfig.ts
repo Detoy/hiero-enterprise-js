@@ -56,8 +56,15 @@ export interface HieroConfig {
  *   HIERO_NETWORK_NODES
  *   HIERO_MIRROR_NETWORK
  *   HIERO_MIRROR_NODE_URL
+ *   HIERO_REQUEST_TIMEOUT_MS
+ *   HIERO_GRPC_DEADLINE_MS
+ *   HIERO_MAX_ATTEMPTS
+ *   HIERO_MIN_BACKOFF_MS
+ *   HIERO_MAX_BACKOFF_MS
  *
  * @returns A HieroConfig or null if required env vars are missing
+ * @throws {HieroError} `CONFIG_INVALID` if a numeric variable is not a
+ *   positive number
  */
 export function resolveConfigFromEnv(): HieroConfig | null {
     const network = process.env["HIERO_NETWORK"];
@@ -104,7 +111,31 @@ export function resolveConfigFromEnv(): HieroConfig | null {
         networkNodes,
         mirrorNetwork: mirrorNetwork?.length ? mirrorNetwork : undefined,
         mirrorNodeUrl: process.env["HIERO_MIRROR_NODE_URL"] || undefined,
+        requestTimeoutMs: positiveNumberFromEnv("HIERO_REQUEST_TIMEOUT_MS"),
+        grpcDeadlineMs: positiveNumberFromEnv("HIERO_GRPC_DEADLINE_MS"),
+        maxAttempts: positiveNumberFromEnv("HIERO_MAX_ATTEMPTS"),
+        minBackoffMs: positiveNumberFromEnv("HIERO_MIN_BACKOFF_MS"),
+        maxBackoffMs: positiveNumberFromEnv("HIERO_MAX_BACKOFF_MS"),
     };
+}
+
+/**
+ * Read a numeric environment variable. Returns `undefined` when unset or
+ * empty, so the SDK default applies.
+ */
+function positiveNumberFromEnv(name: string): number | undefined {
+    const raw = process.env[name];
+    if (raw === undefined || raw.trim() === "") return undefined;
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value <= 0) {
+        throw new HieroError(
+            `${name} must be a positive number, got "${raw}".`,
+            {
+                code: HieroErrorCodes.ConfigInvalid,
+            },
+        );
+    }
+    return value;
 }
 
 /**
