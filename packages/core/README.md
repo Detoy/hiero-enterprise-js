@@ -10,8 +10,6 @@ Each service wraps a part of the [Hiero SDK](https://github.com/hiero-ledger/hie
 npm install @hiero-hackers/enterprise-core
 ```
 
-The package is published to GitHub Packages; see [Install](../../README.md#install) for the registry setup.
-
 ## Usage
 
 ```ts
